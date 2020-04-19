@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ClientXatActivity">
+
+    <EditText
+        android:id="@+id/entrada"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="17dp"
+        android:layout_marginLeft="17dp"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:text="missatge a enviar"
+        app:layout_constraintBaseline_toBaselineOf="@+id/boto"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/boto"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="7dp"
+        android:layout_marginLeft="7dp"
+        android:layout_marginTop="27dp"
+        android:text="envia"
+        app:layout_constraintStart_toEndOf="@+id/entrada"
+        app:layout_constraintTop_toTopOf="parent" />
+
+
+    <ListView
+        android:id="@+id/mensajesListView"
+        android:layout_width="335dp"
+        android:layout_height="396dp"
+        android:layout_marginTop="17dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/button" />
+
+    <Button
+        android:id="@+id/button"
+        android:layout_width="66dp"
+        android:layout_height="36dp"
+        android:layout_marginStart="38dp"
+        android:layout_marginLeft="38dp"
+        android:layout_marginTop="77dp"
+        android:onClick="actualizarXat"
+        android:text="XAT"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/entrada" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
