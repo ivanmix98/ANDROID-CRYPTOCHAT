@@ -4,13 +4,11 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 import android.os.StrictMode;
-import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.TextView;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,6 +51,8 @@ public class ClientXatActivity extends AppCompatActivity {
     private ArrayList<String> arrayMensajes;
     private ArrayAdapter listAdapter;
 
+    FuncioHash hashMsg = new FuncioHash();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -74,7 +74,7 @@ public class ClientXatActivity extends AppCompatActivity {
         addr[0] = (byte) 192;
         addr[1] = (byte) 168;
         addr[2] = (byte) 1;
-        addr[3] = (byte) 33;
+        addr[3] = (byte) 57;
         try {
             InetAddress adreca = InetAddress.getByAddress(addr);
             socol = new Socket();
@@ -92,12 +92,12 @@ public class ClientXatActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     try {
-
                         OutputStream outStream = socol.getOutputStream();
                         PrintWriter sortida = new PrintWriter(outStream, true);
-                        sortida.println(entrada.getText().toString());
-
-
+                        String textEnviat = entrada.getText().toString();
+                        byte[] a = textEnviat.getBytes();
+                        String textXifrat = hashMsg.generarMD5(a);
+                        sortida.println(textXifrat);
                     } catch (UnknownHostException e) {
                         System.out.println("host desconegut");
                         e.printStackTrace();
@@ -137,9 +137,7 @@ public class ClientXatActivity extends AppCompatActivity {
                 while (true) {
                     String resposta = entrada.nextLine();
                     arrayMensajes.add(resposta);
-                    System.out.println("\nSERVER> " + resposta);
-
-
+                    System.out.println("\nSERVER>  blbla" + resposta);
                 }
 
             } catch (UnknownHostException e) {
