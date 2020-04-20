@@ -4,11 +4,13 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,6 +20,13 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -51,7 +60,13 @@ public class ClientXatActivity extends AppCompatActivity {
     private ArrayList<String> arrayMensajes;
     private ArrayAdapter listAdapter;
 
-    FuncioHash hashMsg = new FuncioHash();
+    private FirmaDigital firmaDigital;
+    private KeyPair parClaves;
+    private PrivateKey clauPrivada;
+    private PublicKey clauPublica;
+    private byte[] mensajeByte;
+    private byte[] signatura;
+    private boolean validacion;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,11 +85,13 @@ public class ClientXatActivity extends AppCompatActivity {
         this.listMessages = (ListView) findViewById(R.id.mensajesListView);
         this.listAdapter = new ArrayAdapter(this,android.R.layout.simple_list_item_1,arrayMensajes);
 
+        firmaDigital = new FirmaDigital();
+
         byte[] addr = new byte[4];
         addr[0] = (byte) 192;
         addr[1] = (byte) 168;
         addr[2] = (byte) 1;
-        addr[3] = (byte) 57;
+        addr[3] = (byte) 33;
         try {
             InetAddress adreca = InetAddress.getByAddress(addr);
             socol = new Socket();
@@ -92,12 +109,11 @@ public class ClientXatActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     try {
+
                         OutputStream outStream = socol.getOutputStream();
                         PrintWriter sortida = new PrintWriter(outStream, true);
-                        String textEnviat = entrada.getText().toString();
-                        byte[] a = textEnviat.getBytes();
-                        String textXifrat = hashMsg.generarMD5(a);
-                        sortida.println(textXifrat);
+                        sortida.println(entrada.getText().toString());
+
                     } catch (UnknownHostException e) {
                         System.out.println("host desconegut");
                         e.printStackTrace();
@@ -114,11 +130,11 @@ public class ClientXatActivity extends AppCompatActivity {
 
     }
 
+    //al pulsar el boton se actualiza el chat
     public void actualizarXat(View v){
         listMessages.setAdapter(listAdapter);
         System.out.println(arrayMensajes);
     }
-
 
     class LecturaFil extends Thread {
         private Socket socol = null;
@@ -136,8 +152,24 @@ public class ClientXatActivity extends AppCompatActivity {
                 Scanner entrada = new Scanner(inStream);
                 while (true) {
                     String resposta = entrada.nextLine();
-                    arrayMensajes.add(resposta);
-                    System.out.println("\nSERVER>  blbla" + resposta);
+
+                    //firma digital
+                    mensajeByte = resposta.getBytes("UTF-8");
+                    parClaves = firmaDigital.clavesPuvPriv();
+                    clauPrivada = parClaves.getPrivate();
+                    clauPublica = parClaves.getPublic();
+                    signatura = firmaDigital.signData(mensajeByte, clauPrivada);
+
+                        validacion = firmaDigital.validateSignature(mensajeByte,signatura,clauPublica);
+                        System.out.println("contenido validacion: " + validacion);
+                        if(validacion){
+                            arrayMensajes.add(resposta);
+                            System.out.println("\nSERVER> " + resposta);
+                        }else{
+                            System.out.println("no va");
+                        }
+
+
                 }
 
             } catch (UnknownHostException e) {
