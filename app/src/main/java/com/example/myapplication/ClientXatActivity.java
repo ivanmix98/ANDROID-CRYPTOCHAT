@@ -50,7 +50,10 @@ import java.util.Scanner;
  * Exercici demostratiu de comunicacions amb socols i fils
  */
 public class ClientXatActivity extends AppCompatActivity {
-    FuncioHash hashMsg = new FuncioHash();
+    private FuncioHash hashMsg;
+    private FuncioHash hashMsg2;
+    private String textXifrat;
+    private String textXifrat2;
 
     private Button boto;
     private EditText entrada;
@@ -68,6 +71,8 @@ public class ClientXatActivity extends AppCompatActivity {
     private byte[] mensajeByte;
     private byte[] signatura;
     private boolean validacion;
+
+    private String salida;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,6 +92,8 @@ public class ClientXatActivity extends AppCompatActivity {
         this.listAdapter = new ArrayAdapter(this,android.R.layout.simple_list_item_1,arrayMensajes);
 
         firmaDigital = new FirmaDigital();
+        hashMsg = new FuncioHash();
+        hashMsg2 = new FuncioHash();
 
         byte[] addr = new byte[4];
         addr[0] = (byte) 192;
@@ -112,10 +119,13 @@ public class ClientXatActivity extends AppCompatActivity {
                     try {
                         OutputStream outStream = socol.getOutputStream();
                         PrintWriter sortida = new PrintWriter(outStream, true);
+                        sortida.println(entrada.getText().toString());
+
+                        salida = entrada.getText().toString();
                         String textEnviat = entrada.getText().toString();
                         byte[] a = textEnviat.getBytes();
-                        String textXifrat = hashMsg.generarMD5(a);
-                        sortida.println(textXifrat);
+                         textXifrat = hashMsg.generarMD5(a);
+
                     } catch (UnknownHostException e) {
                         System.out.println("host desconegut");
                         e.printStackTrace();
@@ -155,7 +165,7 @@ public class ClientXatActivity extends AppCompatActivity {
                 while (true) {
                     String resposta = entrada.nextLine();
 
-                    //firma digital
+                    /*firma digital
                     mensajeByte = resposta.getBytes("UTF-8");
                     parClaves = firmaDigital.clavesPuvPriv();
                     clauPrivada = parClaves.getPrivate();
@@ -169,9 +179,21 @@ public class ClientXatActivity extends AppCompatActivity {
                             System.out.println("\nSERVER> " + resposta);
                         }else{
                             System.out.println("no va");
-                        }
+                        }*/
 
-
+                        //hash
+                    byte[] b = resposta.getBytes();
+                    textXifrat2 = hashMsg2.generarMD5(b);
+                  //  System.out.println(salida);
+                   // System.out.println(resposta);
+                    System.out.println(textXifrat);
+                    System.out.println(textXifrat2);
+                    if(textXifrat2.equals(textXifrat)){
+                        arrayMensajes.add(resposta);
+                        System.out.println("\nSERVER> " + resposta);
+                    }else{
+                        System.out.println("no va");
+                    }
                 }
 
             } catch (UnknownHostException e) {
