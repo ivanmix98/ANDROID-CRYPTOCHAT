@@ -20,6 +20,13 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -53,6 +60,14 @@ public class ClientXatActivity extends AppCompatActivity {
     private ArrayList<String> arrayMensajes;
     private ArrayAdapter listAdapter;
 
+    private FirmaDigital firmaDigital;
+    private KeyPair parClaves;
+    private PrivateKey clauPrivada;
+    private PublicKey clauPublica;
+    private byte[] mensajeByte;
+    private byte[] signatura;
+    private boolean validacion;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -69,6 +84,8 @@ public class ClientXatActivity extends AppCompatActivity {
         this.arrayMensajes = new ArrayList<>();
         this.listMessages = (ListView) findViewById(R.id.mensajesListView);
         this.listAdapter = new ArrayAdapter(this,android.R.layout.simple_list_item_1,arrayMensajes);
+
+        firmaDigital = new FirmaDigital();
 
         byte[] addr = new byte[4];
         addr[0] = (byte) 192;
@@ -97,7 +114,6 @@ public class ClientXatActivity extends AppCompatActivity {
                         PrintWriter sortida = new PrintWriter(outStream, true);
                         sortida.println(entrada.getText().toString());
 
-
                     } catch (UnknownHostException e) {
                         System.out.println("host desconegut");
                         e.printStackTrace();
@@ -114,11 +130,11 @@ public class ClientXatActivity extends AppCompatActivity {
 
     }
 
+    //al pulsar el boton se actualiza el chat
     public void actualizarXat(View v){
         listMessages.setAdapter(listAdapter);
         System.out.println(arrayMensajes);
     }
-
 
     class LecturaFil extends Thread {
         private Socket socol = null;
@@ -136,8 +152,22 @@ public class ClientXatActivity extends AppCompatActivity {
                 Scanner entrada = new Scanner(inStream);
                 while (true) {
                     String resposta = entrada.nextLine();
-                    arrayMensajes.add(resposta);
-                    System.out.println("\nSERVER> " + resposta);
+
+                    //firma digital
+                    mensajeByte = resposta.getBytes("UTF-8");
+                    parClaves = firmaDigital.clavesPuvPriv();
+                    clauPrivada = parClaves.getPrivate();
+                    clauPublica = parClaves.getPublic();
+                    signatura = firmaDigital.signData(mensajeByte, clauPrivada);
+
+                        validacion = firmaDigital.validateSignature(mensajeByte,signatura,clauPublica);
+                        System.out.println("contenido validacion: " + validacion);
+                        if(validacion){
+                            arrayMensajes.add(resposta);
+                            System.out.println("\nSERVER> " + resposta);
+                        }else{
+                            System.out.println("no va");
+                        }
 
 
                 }
