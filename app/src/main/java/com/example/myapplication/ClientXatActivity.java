@@ -50,6 +50,7 @@ import java.util.Scanner;
  * Exercici demostratiu de comunicacions amb socols i fils
  */
 public class ClientXatActivity extends AppCompatActivity {
+    FuncioHash hashMsg = new FuncioHash();
 
     private Button boto;
     private EditText entrada;
@@ -109,11 +110,12 @@ public class ClientXatActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     try {
-
                         OutputStream outStream = socol.getOutputStream();
                         PrintWriter sortida = new PrintWriter(outStream, true);
-                        sortida.println(entrada.getText().toString());
-
+                        String textEnviat = entrada.getText().toString();
+                        byte[] a = textEnviat.getBytes();
+                        String textXifrat = hashMsg.generarMD5(a);
+                        sortida.println(textXifrat);
                     } catch (UnknownHostException e) {
                         System.out.println("host desconegut");
                         e.printStackTrace();
