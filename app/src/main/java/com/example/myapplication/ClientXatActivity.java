@@ -50,6 +50,8 @@ import java.util.Scanner;
  * Exercici demostratiu de comunicacions amb socols i fils
  */
 public class ClientXatActivity extends AppCompatActivity {
+    private String tipo;
+
     private FuncioHash hashMsg;
     private FuncioHash hashMsg2;
     private String textXifrat;
@@ -72,7 +74,6 @@ public class ClientXatActivity extends AppCompatActivity {
     private byte[] signatura;
     private boolean validacion;
 
-    private String salida;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,11 +86,11 @@ public class ClientXatActivity extends AppCompatActivity {
         boto = findViewById(R.id.boto);
         entrada = findViewById(R.id.entrada);
 
-
+        tipo = getIntent().getStringExtra("tipo");
         //cosas ivan
         this.arrayMensajes = new ArrayList<>();
         this.listMessages = (ListView) findViewById(R.id.mensajesListView);
-        this.listAdapter = new ArrayAdapter(this,android.R.layout.simple_list_item_1,arrayMensajes);
+        this.listAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, arrayMensajes);
 
         firmaDigital = new FirmaDigital();
         hashMsg = new FuncioHash();
@@ -121,10 +122,11 @@ public class ClientXatActivity extends AppCompatActivity {
                         PrintWriter sortida = new PrintWriter(outStream, true);
                         sortida.println(entrada.getText().toString());
 
-                        salida = entrada.getText().toString();
-                        String textEnviat = entrada.getText().toString();
-                        byte[] a = textEnviat.getBytes();
-                         textXifrat = hashMsg.generarMD5(a);
+                        if (tipo.equals("Hash")) {
+                            String textEnviat = entrada.getText().toString();
+                            byte[] a = textEnviat.getBytes();
+                            textXifrat = hashMsg.generarMD5(a);
+                        }
 
                     } catch (UnknownHostException e) {
                         System.out.println("host desconegut");
@@ -143,7 +145,7 @@ public class ClientXatActivity extends AppCompatActivity {
     }
 
     //al pulsar el boton se actualiza el chat
-    public void actualizarXat(View v){
+    public void actualizarXat(View v) {
         listMessages.setAdapter(listAdapter);
         System.out.println(arrayMensajes);
     }
@@ -165,35 +167,38 @@ public class ClientXatActivity extends AppCompatActivity {
                 while (true) {
                     String resposta = entrada.nextLine();
 
-                    /*firma digital
-                    mensajeByte = resposta.getBytes("UTF-8");
-                    parClaves = firmaDigital.clavesPuvPriv();
-                    clauPrivada = parClaves.getPrivate();
-                    clauPublica = parClaves.getPublic();
-                    signatura = firmaDigital.signData(mensajeByte, clauPrivada);
+                    if (tipo.equals("Firma Digital")) {
+                        mensajeByte = resposta.getBytes("UTF-8");
+                        parClaves = firmaDigital.clavesPuvPriv();
+                        clauPrivada = parClaves.getPrivate();
+                        clauPublica = parClaves.getPublic();
+                        signatura = firmaDigital.signData(mensajeByte, clauPrivada);
 
-                        validacion = firmaDigital.validateSignature(mensajeByte,signatura,clauPublica);
+                        validacion = firmaDigital.validateSignature(mensajeByte, signatura, clauPublica);
                         System.out.println("contenido validacion: " + validacion);
-                        if(validacion){
+                        if (validacion) {
                             arrayMensajes.add(resposta);
                             System.out.println("\nSERVER> " + resposta);
-                        }else{
+                        } else {
                             System.out.println("no va");
-                        }*/
-
+                        }
+                    } else if (tipo.equals("Hash")) {
                         //hash
-                    byte[] b = resposta.getBytes();
-                    textXifrat2 = hashMsg2.generarMD5(b);
-                  //  System.out.println(salida);
-                   // System.out.println(resposta);
-                    System.out.println(textXifrat);
-                    System.out.println(textXifrat2);
-                    if(textXifrat2.equals(textXifrat)){
-                        arrayMensajes.add(resposta);
-                        System.out.println("\nSERVER> " + resposta);
-                    }else{
-                        System.out.println("no va");
+                        byte[] b = resposta.getBytes();
+                        textXifrat2 = hashMsg2.generarMD5(b);
+                        //  System.out.println(salida);
+                        // System.out.println(resposta);
+                        System.out.println(textXifrat);
+                        System.out.println(textXifrat2);
+                        if (textXifrat2.equals(textXifrat)) {
+                            arrayMensajes.add(resposta);
+                            System.out.println("\nSERVER> " + resposta);
+                        } else {
+                            System.out.println("no va");
+                        }
                     }
+
+
                 }
 
             } catch (UnknownHostException e) {

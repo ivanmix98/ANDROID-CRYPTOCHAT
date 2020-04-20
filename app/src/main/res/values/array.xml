@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string-array name="defaultValue">
+        <item>Firma Digital</item>
+        <item>Hash</item>
+        <item>Asimetric</item>
+        <item>Simetric</item>
+    </string-array>
+
+</resources>
