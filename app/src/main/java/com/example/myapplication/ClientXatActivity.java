@@ -4,13 +4,11 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 import android.os.StrictMode;
-import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.TextView;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,15 +18,17 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.Signature;
-import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Scanner;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 
 /**
@@ -51,11 +51,13 @@ import java.util.Scanner;
  */
 public class ClientXatActivity extends AppCompatActivity {
     private String tipo;
-
     private FuncioHash hashMsg;
     private FuncioHash hashMsg2;
-    private String textXifrat;
-    private String textXifrat2;
+    private String textXifratHash;
+    private String textXifratHash2;
+    private String textXifratSim;
+    private String textXifratSim2;
+    private XifratgeSimetric xs = null;
 
     private Button boto;
     private EditText entrada;
@@ -95,12 +97,20 @@ public class ClientXatActivity extends AppCompatActivity {
         firmaDigital = new FirmaDigital();
         hashMsg = new FuncioHash();
         hashMsg2 = new FuncioHash();
+        try {
+            xs = new XifratgeSimetric();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (NoSuchPaddingException e) {
+            e.printStackTrace();
+        }
+
 
         byte[] addr = new byte[4];
         addr[0] = (byte) 192;
         addr[1] = (byte) 168;
         addr[2] = (byte) 1;
-        addr[3] = (byte) 33;
+        addr[3] = (byte) 57;
         try {
             InetAddress adreca = InetAddress.getByAddress(addr);
             socol = new Socket();
@@ -125,14 +135,24 @@ public class ClientXatActivity extends AppCompatActivity {
                         if (tipo.equals("Hash")) {
                             String textEnviat = entrada.getText().toString();
                             byte[] a = textEnviat.getBytes();
-                            textXifrat = hashMsg.generarMD5(a);
+                            textXifratHash = hashMsg.generarMD5(a);
+                        } else if(tipo.equals("Simetric")){
+                            String textEnviat = entrada.getText().toString();
+                            byte[] textXifrat = xs.xifratgeSimetric(textEnviat);
+                            textXifratSim = textXifrat.toString();
+                            sortida.println(textXifratSim);
                         }
-
                     } catch (UnknownHostException e) {
                         System.out.println("host desconegut");
                         e.printStackTrace();
                     } catch (IOException e) {
                         System.out.println("problemes E/S");
+                    } catch (BadPaddingException e) {
+                        e.printStackTrace();
+                    } catch (IllegalBlockSizeException e) {
+                        e.printStackTrace();
+                    } catch (InvalidKeyException e) {
+                        e.printStackTrace();
                     }
                 }
             });
@@ -141,7 +161,6 @@ public class ClientXatActivity extends AppCompatActivity {
         } catch (IOException e) {
             System.out.println("problemes amb la connexio");
         }
-
     }
 
     //al pulsar el boton se actualiza el chat
@@ -149,31 +168,23 @@ public class ClientXatActivity extends AppCompatActivity {
         listMessages.setAdapter(listAdapter);
         System.out.println(arrayMensajes);
     }
-
     class LecturaFil extends Thread {
         private Socket socol = null;
-
         public LecturaFil(Socket s) {
             socol = s;
-
         }
-
         public void run() {
-
             try {
-
                 InputStream inStream = socol.getInputStream();
                 Scanner entrada = new Scanner(inStream);
                 while (true) {
                     String resposta = entrada.nextLine();
-
                     if (tipo.equals("Firma Digital")) {
                         mensajeByte = resposta.getBytes("UTF-8");
                         parClaves = firmaDigital.clavesPuvPriv();
                         clauPrivada = parClaves.getPrivate();
                         clauPublica = parClaves.getPublic();
                         signatura = firmaDigital.signData(mensajeByte, clauPrivada);
-
                         validacion = firmaDigital.validateSignature(mensajeByte, signatura, clauPublica);
                         System.out.println("contenido validacion: " + validacion);
                         if (validacion) {
@@ -185,33 +196,40 @@ public class ClientXatActivity extends AppCompatActivity {
                     } else if (tipo.equals("Hash")) {
                         //hash
                         byte[] b = resposta.getBytes();
-                        textXifrat2 = hashMsg2.generarMD5(b);
+                        textXifratHash2 = hashMsg2.generarMD5(b);
                         //  System.out.println(salida);
                         // System.out.println(resposta);
-                        System.out.println(textXifrat);
-                        System.out.println(textXifrat2);
-                        if (textXifrat2.equals(textXifrat)) {
+                        System.out.println(textXifratHash);
+                        System.out.println(textXifratHash2);
+                        if (textXifratHash2.equals(textXifratHash)) {
+                            arrayMensajes.add(resposta);
+                            System.out.println("\nSERVER> " + resposta);
+                        } else {
+                            System.out.println("no va");
+                        }
+                    } else if(tipo.equals("Simetric")){
+                        byte[] b = resposta.getBytes();
+                        textXifratSim2 = xs.desxifraSimetric(b);
+                        //  System.out.println(salida);
+                        // System.out.println(resposta);
+                        System.out.println(textXifratSim);
+                        System.out.println(textXifratSim2);
+                        if (textXifratSim2.equals(textXifratSim)) {
                             arrayMensajes.add(resposta);
                             System.out.println("\nSERVER> " + resposta);
                         } else {
                             System.out.println("no va");
                         }
                     }
-
-
                 }
-
             } catch (UnknownHostException e) {
                 System.out.println("host desconegut");
                 e.printStackTrace();
             } catch (IOException e) {
                 System.out.println("problemes E/S");
             } catch (Exception e) {
-
             }
-
         }
-
     }
 }
 
