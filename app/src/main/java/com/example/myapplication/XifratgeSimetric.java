@@ -1,5 +1,6 @@
 package com.example.myapplication;
 
+import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import javax.crypto.BadPaddingException;
@@ -24,10 +25,13 @@ public class XifratgeSimetric {
         return missatgeXifrat;
     }
 
-    public String desxifraSimetric(byte[] sms)  throws InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+    public String desxifraSimetric(byte[] sms) throws InvalidKeyException, BadPaddingException, IllegalBlockSizeException, IOException {
         xifradorDES.init(Cipher.DECRYPT_MODE, clauDES);
         byte[] missatgeDes = xifradorDES.doFinal(sms);
-        return new String(missatgeDes);
+        System.out.write(missatgeDes);
+        String mensaje = missatgeDes.toString();
+
+        return mensaje;
     }
 }
 

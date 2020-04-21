@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
@@ -57,21 +58,23 @@ public class ClientXatActivity extends AppCompatActivity {
     private String textXifratHash2;
     private String textXifratSim;
     private String textXifratSim2;
-    private XifratgeSimetric xs = null;
+    private XifratgeSimetric xs;
 
     private Button boto;
     private EditText entrada;
     private PrintWriter sortida;
-    private Socket socol = null;
+    private Socket socol;
 
     private ListView listMessages;
     private ArrayList<String> arrayMensajes;
     private ArrayAdapter listAdapter;
 
     private FirmaDigital firmaDigital;
+    private XifratgeAsimetric xifratgeAsimetric;
     private KeyPair parClaves;
     private PrivateKey clauPrivada;
     private PublicKey clauPublica;
+    private Cipher cifrador;
     private byte[] mensajeByte;
     private byte[] signatura;
     private boolean validacion;
@@ -94,11 +97,20 @@ public class ClientXatActivity extends AppCompatActivity {
         this.listMessages = (ListView) findViewById(R.id.mensajesListView);
         this.listAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, arrayMensajes);
 
+        xifratgeAsimetric = new XifratgeAsimetric();
+        try {
+            cifrador = Cipher.getInstance("RSA");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (NoSuchPaddingException e) {
+            e.printStackTrace();
+        }
         firmaDigital = new FirmaDigital();
         hashMsg = new FuncioHash();
         hashMsg2 = new FuncioHash();
         try {
             xs = new XifratgeSimetric();
+
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         } catch (NoSuchPaddingException e) {
@@ -110,7 +122,7 @@ public class ClientXatActivity extends AppCompatActivity {
         addr[0] = (byte) 192;
         addr[1] = (byte) 168;
         addr[2] = (byte) 1;
-        addr[3] = (byte) 57;
+        addr[3] = (byte) 33;
         try {
             InetAddress adreca = InetAddress.getByAddress(addr);
             socol = new Socket();
@@ -130,17 +142,30 @@ public class ClientXatActivity extends AppCompatActivity {
                     try {
                         OutputStream outStream = socol.getOutputStream();
                         PrintWriter sortida = new PrintWriter(outStream, true);
-                        sortida.println(entrada.getText().toString());
 
+                        if (tipo.equals("Firma Digital")) {
+                            sortida.println(entrada.getText().toString());
+                        }
                         if (tipo.equals("Hash")) {
+                            sortida.println(entrada.getText().toString());
                             String textEnviat = entrada.getText().toString();
                             byte[] a = textEnviat.getBytes();
                             textXifratHash = hashMsg.generarMD5(a);
                         } else if(tipo.equals("Simetric")){
                             String textEnviat = entrada.getText().toString();
+                            System.out.println("El missatge a enviar es:" +textEnviat);
                             byte[] textXifrat = xs.xifratgeSimetric(textEnviat);
                             textXifratSim = textXifrat.toString();
+                            System.out.println("El missatge encriptat a enviar es:" +textXifratSim);
                             sortida.println(textXifratSim);
+                        }
+                        if (tipo.equals("Asimetric")) {
+                            String mensaje = entrada.getText().toString();
+                            parClaves = xifratgeAsimetric.crearClaus();
+                            clauPrivada = parClaves.getPrivate();
+                            clauPublica = parClaves.getPublic();
+                           byte[] x = xifratgeAsimetric.xifratgeASimetric(mensaje, clauPublica, cifrador);
+                           sortida.println(x.toString());
                         }
                     } catch (UnknownHostException e) {
                         System.out.println("host desconegut");
@@ -152,6 +177,10 @@ public class ClientXatActivity extends AppCompatActivity {
                     } catch (IllegalBlockSizeException e) {
                         e.printStackTrace();
                     } catch (InvalidKeyException e) {
+                        e.printStackTrace();
+                    } catch (NoSuchAlgorithmException e) {
+                        e.printStackTrace();
+                    } catch (NoSuchPaddingException e) {
                         e.printStackTrace();
                     }
                 }
@@ -208,18 +237,22 @@ public class ClientXatActivity extends AppCompatActivity {
                             System.out.println("no va");
                         }
                     } else if(tipo.equals("Simetric")){
+                        System.out.println("El text encriptat arribat es: " + resposta);
                         byte[] b = resposta.getBytes();
-                        textXifratSim2 = xs.desxifraSimetric(b);
-                        //  System.out.println(salida);
-                        // System.out.println(resposta);
-                        System.out.println(textXifratSim);
-                        System.out.println(textXifratSim2);
-                        if (textXifratSim2.equals(textXifratSim)) {
-                            arrayMensajes.add(resposta);
-                            System.out.println("\nSERVER> " + resposta);
-                        } else {
-                            System.out.println("no va");
-                        }
+                        System.out.write(b);
+                        xs.desxifraSimetric(b);
+
+                       // if (textXifratSim2.equals(textXifratSim)) {
+                            //arrayMensajes.add(textXifratSim2);
+                           // System.out.println("\nSERVER> " + textXifratSim2);
+                      //  } else {
+                        //    System.out.println("no va");
+                       // }
+                    } else if(tipo.equals("Asimetric")){
+                        byte[] x = resposta.getBytes();
+                        String mensaje =  xifratgeAsimetric.desxifraASimetric(x,clauPrivada,cifrador);
+                        arrayMensajes.add(mensaje);
+                        System.out.println("\nSERVER> " + mensaje);
                     }
                 }
             } catch (UnknownHostException e) {
